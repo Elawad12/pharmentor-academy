@@ -1,0 +1,14 @@
+{
+  "course": {
+    "url": "https://picsum.photos/seed/course/600/400",
+    "hint": "pharmacy education"
+  },
+  "article": {
+    "url": "https://picsum.photos/seed/article/600/400",
+    "hint": "medical research"
+  },
+  "job": {
+    "url": "https://picsum.photos/seed/job/600/400",
+    "hint": "professional opportunity"
+  }
+}

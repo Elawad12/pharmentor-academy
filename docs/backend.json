@@ -1,0 +1,382 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile on the PharMentor platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user profile."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The user's phone number."
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date and time the user registered.",
+          "format": "date-time"
+        },
+        "isPharmacist": {
+          "type": "boolean",
+          "description": "Indicates whether the user is a registered pharmacist."
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "email",
+        "registrationDate"
+      ]
+    },
+    "Course": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Course",
+      "type": "object",
+      "description": "Represents a course offered on the PharMentor platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the course."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the course."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the course content."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the course."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency for the course price.",
+          "enum": [
+            "SAR",
+            "SDG",
+            "USD",
+            "EUR",
+            "AED",
+            "KWD",
+            "OMR"
+          ]
+        },
+        "duration": {
+          "type": "string",
+          "description": "The duration of the course."
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "مبتدئ",
+            "متوسط",
+            "متقدم"
+          ],
+          "description": "The difficulty level of the course."
+        },
+        "isSple": {
+          "type": "boolean",
+          "description": "Indicates if the course is for SPLE preparation."
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the course's image."
+        },
+        "imageHint": {
+          "type": "string",
+          "description": "A hint for AI to find a relevant image."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "currency",
+        "duration",
+        "level"
+      ]
+    },
+    "JobPosting": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobPosting",
+      "type": "object",
+      "description": "Represents a job posting on the PharMentor platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the job posting."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the job posting."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the job duties and requirements."
+        },
+        "company": {
+          "type": "string",
+          "description": "The name of the company offering the job."
+        },
+        "location": {
+          "type": "string",
+          "description": "The location of the job."
+        },
+        "postedDate": {
+          "type": "string",
+          "description": "The date the job was posted.",
+          "format": "date-time"
+        },
+        "expiryDate": {
+          "type": "string",
+          "description": "The expiry date of the job posting.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "company",
+        "location",
+        "postedDate",
+        "expiryDate"
+      ]
+    },
+    "PaymentTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PaymentTransaction",
+      "type": "object",
+      "description": "Represents a payment transaction made on the PharMentor platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the payment transaction."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N PaymentTransaction) The ID of the user who made the payment."
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "The date and time the transaction was made.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The payment method used for the transaction (e.g., Bankak, Faisal Islamic Bank, Fawry)."
+        },
+        "transactionStatus": {
+          "type": "string",
+          "description": "The status of the transaction (e.g., pending, completed, failed)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "transactionDate",
+        "amount",
+        "paymentMethod",
+        "transactionStatus"
+      ]
+    },
+    "SystemBackup": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SystemBackup",
+      "type": "object",
+      "description": "Represents a system backup record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the system backup record."
+        },
+        "backupDate": {
+          "type": "string",
+          "description": "The date and time the backup was created.",
+          "format": "date-time"
+        },
+        "backupLocation": {
+          "type": "string",
+          "description": "The location where the backup is stored."
+        },
+        "backupType": {
+          "type": "string",
+          "description": "The type of backup (e.g., full, incremental)."
+        }
+      },
+      "required": [
+        "id",
+        "backupDate",
+        "backupLocation",
+        "backupType"
+      ]
+    },
+    "PlatformBranding": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PlatformBranding",
+      "type": "object",
+      "description": "Represents the branding configuration for the PharMentor platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the branding configuration."
+        },
+        "platformName": {
+          "type": "string",
+          "description": "The name of the platform."
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "URL of the platform logo.",
+          "format": "uri"
+        },
+        "primaryColor": {
+          "type": "string",
+          "description": "The primary color of the platform (e.g., hexadecimal color code)."
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "The accent color of the platform (e.g., hexadecimal color code)."
+        }
+      },
+      "required": [
+        "id",
+        "platformName",
+        "logoUrl",
+        "primaryColor",
+        "accentColor"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile data. Secured by path-based ownership (request.auth.uid == userId).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user (same as the Firebase Auth UID)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}",
+        "definition": {
+          "entityName": "Course",
+          "schema": {
+            "$ref": "#/backend/entities/Course"
+          },
+          "description": "Stores course information. Includes instructorId field for identifying the course creator.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique ID of the course."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/job_postings/{jobPostingId}",
+        "definition": {
+          "entityName": "JobPosting",
+          "schema": {
+            "$ref": "#/backend/entities/JobPosting"
+          },
+          "description": "Stores job posting data.  Accessible for listing and viewing.",
+          "params": [
+            {
+              "name": "jobPostingId",
+              "description": "The unique ID of the job posting."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/payment_transactions/{paymentTransactionId}",
+        "definition": {
+          "entityName": "PaymentTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/PaymentTransaction"
+          },
+          "description": "Stores payment transaction data for a specific user. Secured by path-based ownership (request.auth.uid == userId).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user making the payment (same as the Firebase Auth UID)."
+            },
+            {
+              "name": "paymentTransactionId",
+              "description": "The unique ID of the payment transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/system_backups/{backupId}",
+        "definition": {
+          "entityName": "SystemBackup",
+          "schema": {
+            "$ref": "#/backend/entities/SystemBackup"
+          },
+          "description": "Stores system backup records.  Intended for admin-level access only.",
+          "params": [
+            {
+              "name": "backupId",
+              "description": "The unique ID of the system backup record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/platform_branding/{brandingId}",
+        "definition": {
+          "entityName": "PlatformBranding",
+          "schema": {
+            "$ref": "#/backend/entities/PlatformBranding"
+          },
+          "description": "Stores platform branding configurations. Intended for admin-level access only.",
+          "params": [
+            {
+              "name": "brandingId",
+              "description": "The unique ID of the platform branding configuration."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the PharMentor platform's core features, emphasizing security, scalability, and ease of debugging.  Authorization Independence is achieved primarily through path-based ownership for user-specific data and the use of membership maps where collaboration is required.  QAPs are supported via Structural Segregation, ensuring that collections with different security postures are isolated.\n\nSpecifically:\n\n*   **User Profiles:** Stored under `/users/{userId}`, enabling path-based ownership. This trivially secures user data, and allows for easy retrieval based on `request.auth.uid`.\n*   **Courses:** Stored under `/courses/{courseId}`. Courses contain the `instructorId` field, representing the UserProfile that created the course.\n*   **Job Postings:**  Stored under `/job_postings/{jobPostingId}`. This allows public listing and individual document access without complex rules.\n*   **Payment Transactions:** Stored under `/users/{userId}/payment_transactions/{paymentTransactionId}`.  This structure maintains a 1:N relationship between users and their payment transactions, simplifying security rules and queries.\n*   **System Backups:**  Stored under `/system_backups/{backupId}`.  This collection is intended for admin-level access only.\n*   **Platform Branding:** Stored under `/platform_branding/{brandingId}`. This also intended for admin-level access only.\n\nThis design avoids `get()` calls in security rules by denormalizing authorization data where necessary (instructorId in the Course entity) and leveraging path-based ownership.  It also ensures that all documents within a collection share a common security posture, simplifying rule creation and maintenance."
+  }
+}

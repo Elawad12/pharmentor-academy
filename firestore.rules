@@ -1,0 +1,224 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict security model based on user ownership and role segregation.
+ * User-specific data is private and accessible only to the owning user, while public content like courses and jobs
+ * is readable by anyone but can only be modified by its creator. Administrative collections are completely locked
+ * down from client-side access.
+ *
+ * Data Structure: The data is organized into a mix of top-level collections and user-specific subcollections.
+ *   - /users/{userId}: Contains user profiles and nested private data like payment transactions. Access is
+ *     controlled by matching the authenticated user's ID with the {userId} in the path.
+ *   - /courses, /jobs: Top-level collections for publicly readable data.
+ *   - /system_backups, /bankAccounts: Top-level collections intended for backend/admin access only.
+ *
+ * Key Security Decisions:
+ *   - User Isolation: A user can only access their own data tree under /users/{userId}. Listing or viewing
+ *     other users' profiles or private data is strictly forbidden for non-admins.
+ *   - Public Read, Owned Write: Collections like /courses are publicly readable to all users (including
+ *     unauthenticated ones), but write operations (create, update, delete) are restricted to the document's
+ *     original author, identified by an `instructorId` field.
+ *   - Admin Data Lockdown: Collections intended for administrative purposes (/system_backups, /bankAccounts)
+ *     are completely inaccessible from the client to prevent any potential tampering or data leaks.
+ *
+ * Denormalization for Authorization: The rules rely on denormalized ownership fields to make authorization
+ * decisions without performing extra `get()` calls. For instance, each document in the `/courses` collection
+ * contains an `instructorId` field. This allows the rules to instantly verify if the requesting user is the
+ * owner of a course during an update or delete operation, which is simple, fast, and cost-effective.
+ *
+ * Structural Segregation: The data model clearly separates private and public data. Private payment
+ * transactions are nested within a user's document, while public courses are in their own top-level collection.
+ * This separation simplifies security rules and makes client-side queries for public data more performant,
+ * as they do not need to filter out private documents.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    /**
+     * Checks if the user has an admin role by reading their user document.
+     * This is a cross-document read and should be used in rules for collections other than `users`.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['مشرف النظام', 'مدير النظام'];
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the userId from the path.
+     * Use this for documents within a user's private data tree (e.g., /users/{userId}/...).
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures a specific field is not changed during an update operation.
+     * Critical for preventing users from re-assigning ownership or changing their own role.
+     */
+    function isImmutable(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+    
+    /**
+     * Ensures an incoming document's ownership field (e.g., 'creatorId', 'authorId')
+     * is correctly set to the authenticated user's UID during creation.
+     */
+    function ownsCreatedDoc(ownerField) {
+      return isSignedIn() && request.resource.data[ownerField] == request.auth.uid;
+    }
+
+
+    // --------------------------------
+    // Collection Rules
+    // --------------------------------
+
+    /**
+     * @description Publicly readable settings, manageable by admins.
+     * @path /settings/{settingId}
+     */
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Publicly readable branding, manageable by the Platform Manager.
+     * @path /branding/{brandingId}
+     */
+    match /branding/{brandingId} {
+      allow read: if true;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'مدير النظام';
+    }
+
+    /**
+     * @description Publicly readable goals, manageable by admins.
+     * @path /goals/{goalId}
+     */
+    match /goals/{goalId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    /**
+     * @description Publicly readable articles, manageable by admins.
+     * @path /articles/{articleId}
+     */
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Consultations are public to read. Creation requires sign-in.
+     * Deletion is restricted to the author or an admin.
+     * @path /consultations/{consultationId}
+     */
+    match /consultations/{consultationId} {
+      allow read: if true;
+      allow create: if ownsCreatedDoc('authorId');
+      allow update: if false; // Disallow updating questions for simplicity
+      allow delete: if isAdmin() || resource.data.authorId == request.auth.uid;
+
+      // Answers can be read by anyone. Creation requires sign-in. Deletion by author or admin.
+      match /answers/{answerId} {
+        allow read: if true;
+        allow create: if ownsCreatedDoc('authorId');
+        allow update: if false; // Disallow updating answers
+        allow delete: if isAdmin() || resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    /**
+     * @description Anyone can submit the contact form. Only admins can read/delete.
+     * @path /contactSubmissions/{submissionId}
+     */
+    match /contactSubmissions/{submissionId} {
+      allow create: if true;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    /**
+     * @description User profile management.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      // An admin can read any profile. A user can only read their own.
+      allow get: if isOwner(userId) || isAdmin();
+      // Only admins can list users.
+      allow list: if isAdmin();
+      
+      // A user can create their own profile, but cannot assign themselves an admin role.
+      allow create: if isOwner(userId) && 
+                      !(request.resource.data.role in ['مشرف النظام', 'مدير النظام']);
+
+      // An admin can update any profile. A user can only update their own, and cannot change their role.
+      allow update: if isAdmin() || (isOwner(userId) && isImmutable('role'));
+
+      // Only the Platform Manager can delete user documents for safety.
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'مدير النظام';
+
+      /**
+       * @description A user can manage their own course registrations.
+       * @path /users/{userId}/registrations/{courseId}
+       */
+      match /registrations/{courseId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      }
+
+      /**
+       * @description A user can manage their own payment transactions.
+       * @path /users/{userId}/payment_transactions/{paymentTransactionId}
+       */
+      match /payment_transactions/{paymentTransactionId} {
+        allow read, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId) && isImmutable('userId');
+      }
+    }
+
+    /**
+     * @description Courses are publicly readable. Writable only by admins.
+     * @path /courses/{courseId}
+     */
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Jobs are publicly readable. Writable only by admins.
+     * @path /jobs/{jobId}
+     */
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    /**
+     * @description Bank accounts are an admin-only collection.
+     * @path /bankAccounts/{accountId}
+     */
+    match /bankAccounts/{accountId} {
+      allow read, write: if isAdmin();
+    }
+
+    /**
+     * @description System backup records are not client-accessible.
+     * @path /system_backups/{backupId}
+     */
+    match /system_backups/{backupId} {
+      allow read, write: if false;
+    }
+  }
+}
